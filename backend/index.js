@@ -8,14 +8,14 @@ dotenv.config();
 
 let server=express();
 
+server.use(cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    credentials: true
+}));
+
 server.use(express.json())//Postman
 server.use(express.urlencoded({ extended: true }));//Data comming from HTML/React forms
 server.use(cookieParser())
-
-server.use(cors({
-    origin: "http://localhost:5173",
-    credentials: true
-}));
 
 
 

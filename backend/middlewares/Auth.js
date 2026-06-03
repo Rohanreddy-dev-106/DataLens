@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
+import { ApiError } from "../src/utils/api.error.js";
 
 export default function jwtAuth(req, res, next) {
     const token = req.cookies.jwtToken;
 
     if (!token) {
-        return res.status(401).send("Invalid credentials");
+        return res.status(401).json(new ApiError(401, "Access denied: No token provided"));
     }
 
     try {
@@ -19,6 +20,6 @@ export default function jwtAuth(req, res, next) {
 
         next();
     } catch (error) {
-        return res.status(401).send("Invalid credentials");
+        return res.status(401).json(new ApiError(401, "Invalid token or credentials"));
     }
 }

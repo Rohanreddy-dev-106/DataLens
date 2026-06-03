@@ -1,5 +1,6 @@
 import express from"express"
 import UserController from "../controllers/user.controller.js";
+import jwtAuth from "../../middlewares/Auth.js";
 const UserRouts=express.Router();
 
 const user=new UserController();
@@ -12,6 +13,9 @@ UserRouts.post("/login", (req, res, next) => {
 })
 UserRouts.post("/logout", (req, res, next) => {
     user.logout(req, res, next)
+})
+UserRouts.get("/profile", jwtAuth, (req, res, next) => {
+    user.profile(req, res, next)
 })
 
 export default UserRouts;
