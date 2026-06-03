@@ -48,7 +48,7 @@ export default function Navbar({ user, onLogout }) {
               Welcome, <span className='font-bold text-slate-900'>{user.name}</span>
             </span>
             <Button
-              onClick={onLogout}
+              onClick={onLogout}//call to parent from child prop 
               className='bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium shadow-sm transition-all duration-200 cursor-pointer px-4 py-2'>
               Logout
             </Button>

@@ -27,7 +27,7 @@ function App() {
     }
   };
 
-  useEffect(() => {
+  useEffect(() => {//it chicks on first  render 
     checkAuth();
   }, []);
 
