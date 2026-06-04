@@ -162,7 +162,7 @@ export default function RegisterForm() {
                 <Link
                   to='/login'
                   className='font-semibold text-indigo-600 hover:text-indigo-500 transition-colors'>
-                  Registration
+                  Log In
                 </Link>
               </p>
             </CardContent>

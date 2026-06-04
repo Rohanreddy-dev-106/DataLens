@@ -5,6 +5,7 @@ import LoginForm from "./components/LoginForm";
 import RegisterForm from "./components/RegisterForm";
 import LandingPage from "./pages/LandingPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import DeepAnalyticPage from "./pages/DeepAnalyticPage";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -56,32 +57,56 @@ function App() {
     <Router>
       <Routes>
         {/* Landing Page */}
-        <Route path="/" element={<LandingPage user={user} onLogout={handleLogout} />} />
-        
-        {/* Login Page: If logged in, redirect to analytics */}
-        <Route 
-          path="/login" 
-          element={user ? <Navigate to="/analytics" replace /> : <LoginForm onLoginSuccess={checkAuth} />} 
-        />
-        
-        {/* Register Page: If logged in, redirect to analytics */}
-        <Route 
-          path="/register" 
-          element={user ? <Navigate to="/analytics" replace /> : <RegisterForm />} 
-        />
-        <Route 
-          path="/signup" 
-          element={<Navigate to="/register" replace />} 
+        <Route
+          path='/'
+          element={<LandingPage user={user} onLogout={handleLogout} />}
         />
 
+        {/* Login Page: If logged in, redirect to analytics */}
+        <Route
+          path='/login'
+          element={
+            user ? (
+              <Navigate to='/analytics' replace />
+            ) : (
+              <LoginForm onLoginSuccess={checkAuth} />
+            )
+          }
+        />
+
+        {/* Register Page: If logged in, redirect to analytics */}
+        <Route
+          path='/register'
+          element={
+            user ? <Navigate to='/analytics' replace /> : <RegisterForm />
+          }
+        />
+        <Route path='/signup' element={<Navigate to='/register' replace />} />
+
         {/* Analytics Workspace: If not logged in, redirect to login */}
-        <Route 
-          path="/analytics" 
-          element={user ? <AnalyticsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} 
+        <Route
+          path='/analytics'
+          element={
+            user ? (
+              <AnalyticsPage user={user} onLogout={handleLogout} />
+            ) : (
+              <Navigate to='/login' replace />
+            )
+          }
+        />
+        <Route
+          path='/analytics/deep'
+          element={
+            user ? (
+              <DeepAnalyticPage user={user} onLogout={handleLogout} />
+            ) : (
+              <Navigate to='/login' replace />
+            )
+          }
         />
 
         {/* Catch-all redirects to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
     </Router>
   );
