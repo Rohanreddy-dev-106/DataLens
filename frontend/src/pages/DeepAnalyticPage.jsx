@@ -12,6 +12,9 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  ReferenceLine,
+  ReferenceArea,
+  Label,
 } from "recharts";
 import {
   BrainCircuit,
@@ -69,12 +72,18 @@ export default function DeepAnalyticPage() {
         });
 
         // Map and normalize the timeline array cleanly for robust area transitions
-        const normalizedData = (payload.timeline_data || []).map((item) => ({
-          label: item.label,
-          // If value exists, use it. If it's a prediction step, fall back to the prediction variable
-          displayValue: item.value !== null ? item.value : item.prediction,
-          isPrediction: item.value === null,
-        }));
+        const normalizedData = (payload.timeline_data || []).map((item, index, arr) => {
+          const isPred = item.value === null;
+          const val = item.value !== null ? item.value : item.prediction;
+          const isLastHistorical = !isPred && (index === arr.length - 1 || arr[index + 1].value === null);
+          return {
+            label: item.label,
+            historical: isPred ? null : val,
+            forecast: isPred || isLastHistorical ? val : null,
+            displayValue: val,
+            isPrediction: isPred,
+          };
+        });
 
         // Dynamic sub-header text depending on what strategy LangChain autonomously executed
         const hasTimeTrace = (payload.logs || []).some((log) =>
@@ -230,58 +239,50 @@ export default function DeepAnalyticPage() {
                 <ResponsiveContainer width='100%' height='100%'>
                   <AreaChart
                     data={chartData}
-                    margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    margin={{ top: 20, right: 10, left: -15, bottom: 0 }}>
                     <defs>
-                      <linearGradient
-                        id='colorDisplay'
-                        x1='0'
-                        y1='0'
-                        x2='0'
-                        y2='1'>
-                        <stop
-                          offset='5%'
-                          stopColor='#4f46e5'
-                          stopOpacity={0.2}
-                        />
-                        <stop
-                          offset='95%'
-                          stopColor='#4f46e5'
-                          stopOpacity={0.0}
-                        />
+                      <linearGradient id='colorHistorical' x1='0' y1='0' x2='0' y2='1'>
+                        <stop offset='5%' stopColor='#6366f1' stopOpacity={0.25}/>
+                        <stop offset='95%' stopColor='#6366f1' stopOpacity={0.0}/>
+                      </linearGradient>
+                      <linearGradient id='colorForecast' x1='0' y1='0' x2='0' y2='1'>
+                        <stop offset='5%' stopColor='#10b981' stopOpacity={0.25}/>
+                        <stop offset='95%' stopColor='#10b981' stopOpacity={0.0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke='#f1f5f9' />
+                    <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' vertical={false} />
                     <XAxis
                       dataKey='label'
-                      stroke='#94a3b8'
+                      stroke='#64748b'
                       style={{ fontSize: "10px", fontFamily: "monospace" }}
                     />
                     <YAxis
-                      stroke='#94a3b8'
+                      stroke='#64748b'
                       style={{ fontSize: "10px", fontFamily: "monospace" }}
                     />
                     <Tooltip
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           const data = payload[0].payload;
+                          const isPred = data.isPrediction;
                           return (
-                            <div className='bg-white p-3 rounded-xl border border-slate-200 shadow-md text-xs space-y-1'>
-                              <p className='font-mono text-slate-400'>
-                                {data.label}
+                            <div className='bg-slate-900/95 text-white p-3 rounded-xl border border-slate-800 shadow-xl text-xs space-y-1.5 backdrop-blur-md'>
+                              <p className='font-mono text-slate-400 border-b border-slate-800 pb-1'>
+                                Date/Step: {data.label}
                               </p>
-                              <p className='font-bold text-slate-800'>
-                                Value:{" "}
-                                <span className='text-indigo-600'>
-                                  {payload[0].value}
+                              <div className='flex items-center justify-between gap-4'>
+                                <span className='text-slate-400'>Unified Metric Value:</span>
+                                <span className={`font-mono font-bold ${isPred ? "text-emerald-400" : "text-indigo-400"}`}>
+                                  {data.displayValue}
                                 </span>
-                              </p>
-                              <p className='text-[10px] font-bold uppercase tracking-wider'>
-                                {data.isPrediction ? (
-                                  <span className='text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded'>
+                              </div>
+                              <p className='text-[10px] font-bold uppercase tracking-wider pt-0.5'>
+                                {isPred ? (
+                                  <span className='text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/50'>
                                     AI Forecast Interval
                                   </span>
                                 ) : (
-                                  <span className='text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded'>
+                                  <span className='text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-900/50'>
                                     Historical Base
                                   </span>
                                 )}
@@ -292,17 +293,33 @@ export default function DeepAnalyticPage() {
                         return null;
                       }}
                     />
-                    <Legend
-                      wrapperStyle={{ fontSize: "11px", paddingTop: "5px" }}
+                    <Legend 
+                      verticalAlign="top" 
+                      height={36} 
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: "11px", fontWeight: 600, color: "#334155" }}
                     />
                     <Area
                       type='monotone'
-                      dataKey='displayValue'
-                      stroke='#4f46e5'
-                      strokeWidth={2.5}
+                      dataKey='historical'
+                      stroke='#6366f1'
+                      strokeWidth={3}
                       fillOpacity={1}
-                      fill='url(#colorDisplay)'
-                      name='Unified Feature Matrix Metric'
+                      fill='url(#colorHistorical)'
+                      name='Historical Actuals'
+                      activeDot={{ r: 6, strokeWidth: 0 }}
+                    />
+                    <Area
+                      type='monotone'
+                      dataKey='forecast'
+                      stroke='#10b981'
+                      strokeDasharray='5 5'
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill='url(#colorForecast)'
+                      name='LangChain Predictive Horizon'
+                      activeDot={{ r: 6, strokeWidth: 0 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>

@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import fs from "fs";
 import UserRepo from "../repo/user.repo.js";
 import { APIResponse } from "../utils/api.responce.js";
 import { ApiError } from "../utils/api.error.js";
@@ -111,6 +112,56 @@ export default class UserController {
       }));
     } catch (err) {
       console.error("Profile Error:", err);
+      return res.status(500).json(new ApiError(500, err.message || "Internal Server Error"));
+    }
+  }
+
+  // Data analysis forwarding
+  async analysis(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json(new ApiError(400, "No file uploaded"));
+      }
+
+      // Read uploaded file as a Blob using global Blob and fs
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const blob = new Blob([fileBuffer], { type: req.file.mimetype });
+
+      // Create FormData
+      const formData = new FormData();
+      formData.append("file", blob, req.file.originalname);
+
+      // Call Python analysis service running on port 5000
+      const response = await fetch("http://127.0.0.1:5000/analysis", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Python service error: ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      // Clean up temp file
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupErr) {
+        console.error("Failed to delete temp file:", cleanupErr);
+      }
+
+      return res.status(200).json(new APIResponse(200, "Data analyzed successfully", result));
+    } catch (err) {
+      console.error("Analysis Error:", err);
+      // Ensure cleanup in case of error
+      if (req.file && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (cleanupErr) {
+          console.error("Failed to delete temp file:", cleanupErr);
+        }
+      }
       return res.status(500).json(new ApiError(500, err.message || "Internal Server Error"));
     }
   }
