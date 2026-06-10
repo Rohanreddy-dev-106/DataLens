@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
@@ -64,7 +64,26 @@ export default function AnalyticsPage({ user, onLogout }) {
   const [visualTab, setVisualTab] = useState("nulls");
   const [selectedNumCol, setSelectedNumCol] = useState("");
   const [selectedCatCol, setSelectedCatCol] = useState("");
-  
+  const [savedFileName, setSavedFileName] = useState("");
+
+  // ── Rehydrate from localStorage on first mount ──
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem("datalens_analysis");
+      if (cached) {
+        const { result, numCol, catCol, fileName } = JSON.parse(cached);
+        if (result) {
+          setAnalysisResult(result);
+          if (numCol) setSelectedNumCol(numCol);
+          if (catCol) setSelectedCatCol(catCol);
+          if (fileName) setSavedFileName(fileName);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to restore analysis from localStorage:", e);
+    }
+  }, []);
+
   // Interactive frontend-only chart feature states
   const [distChartType, setDistChartType] = useState("area");
   const [showMeanLine, setShowMeanLine] = useState(true);
@@ -111,6 +130,7 @@ export default function AnalyticsPage({ user, onLogout }) {
     setUploading(true);
     setError("");
     setAnalysisResult(null);
+    setSavedFileName("");
 
     const formData = new FormData();
     formData.append("file", selectedFile);
@@ -128,11 +148,26 @@ export default function AnalyticsPage({ user, onLogout }) {
       );
       if (response.data && response.data.success) {
         const resultData = response.data.data;
-        setAnalysisResult(resultData);
         const numCols = resultData.filtered_map?.numeric || [];
         const catCols = resultData.filtered_map?.categorical || [];
-        if (numCols.length > 0) setSelectedNumCol(numCols[0]);
-        if (catCols.length > 0) setSelectedCatCol(catCols[0]);
+        const firstNum = numCols.length > 0 ? numCols[0] : "";
+        const firstCat = catCols.length > 0 ? catCols[0] : "";
+        const fName = selectedFile?.name || "";
+
+        setAnalysisResult(resultData);
+        if (firstNum) setSelectedNumCol(firstNum);
+        if (firstCat) setSelectedCatCol(firstCat);
+        setSavedFileName(fName);
+
+        // ── Persist to localStorage ──
+        try {
+          localStorage.setItem(
+            "datalens_analysis",
+            JSON.stringify({ result: resultData, numCol: firstNum, catCol: firstCat, fileName: fName })
+          );
+        } catch (e) {
+          console.warn("localStorage save failed:", e);
+        }
       } else {
         setError(response.data.message || "Failed to analyze the file.");
       }
@@ -152,6 +187,8 @@ export default function AnalyticsPage({ user, onLogout }) {
     setError("");
     setSelectedNumCol("");
     setSelectedCatCol("");
+    setSavedFileName("");
+    localStorage.removeItem("datalens_analysis");
   };
 
   const getColType = (colName) => {
@@ -477,7 +514,7 @@ export default function AnalyticsPage({ user, onLogout }) {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 truncate max-w-md">
-                      {file ? file.name : "Dataset Profile"}
+                      {file ? file.name : savedFileName || "Dataset Profile"}
                     </h2>
                     <p className="text-xs text-slate-500 font-medium">
                       Analysis completed successfully. Outliers & null patterns resolved.
