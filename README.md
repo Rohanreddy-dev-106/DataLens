@@ -209,7 +209,7 @@ The app will be available at **http://localhost:5173**.
 |--------|----------|:----:|---|
 | `POST` | `/api/user/register` | ❌ | Register a new user |
 | `POST` | `/api/user/login` | ❌ | Login and receive JWT cookie |
-| `POST` | `/api/user/logout` | ❌ | Clear JWT cookie |
+| `POST` | `/api/user/logout` | ✅ | Clear JWT cookie |
 | `GET`  | `/api/user/profile` | ✅ | Get authenticated user's profile |
 | `POST` | `/api/user/analysis` | ✅ | Upload CSV → proxies to Flask EDA |
 
